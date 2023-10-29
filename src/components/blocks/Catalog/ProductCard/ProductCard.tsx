@@ -1,12 +1,13 @@
 import './style.scss';
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Button } from 'components/UI/Button/Button';
 import { ReactComponent as CartIcon } from './assets/basket.svg';
 import { useNavigate } from 'react-router-dom';
-import { pagePathnames } from 'router/pagePathnames';
-import { transformPriceText } from './helpers';
+import { transformPriceText } from '../../../../helpers/formatText';
 import { type IProductDetails } from 'types/types';
 import { Price } from 'components/UI/Price/Price';
+import basketAPI from 'API/BasketAPI';
+import { UserContext } from 'store/userContext';
 
 export const ProductCard = ({
   id,
@@ -16,13 +17,30 @@ export const ProductCard = ({
   price,
   discountPrice,
 }: IProductDetails) => {
+  const DEFAULT_VARIANT_ID = 1;
+  const DEFAULT_PRODUCT_QUANTITY = 1;
+  const [isProductInCart, setIsProductInCart] = useState(false);
+  const { cart, setCart } = useContext(UserContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setIsProductInCart(!!checkProductAvailabilityInCart());
+  }, [cart]);
+
+  const checkProductAvailabilityInCart = () =>
+    cart?.lineItems.find((item) => item.productId === id);
+
+  const onCartClick = async (evt: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    evt.stopPropagation();
+    const newCart = await basketAPI.addToCart(id, DEFAULT_VARIANT_ID, DEFAULT_PRODUCT_QUANTITY);
+    if (newCart) setCart?.(newCart);
+  };
 
   return (
     <article
       className="product-card"
       onClick={() => {
-        navigate(`${pagePathnames.catalog}/${id}`);
+        navigate(`${id}`);
       }}
     >
       <div className="product-card__slider slider">
@@ -43,11 +61,10 @@ export const ProductCard = ({
           formatter={transformPriceText}
         />
         <Button
-          accent
+          accent={!isProductInCart}
+          disabled={isProductInCart}
           className="product-card__cart-button button--w-icon"
-          onClick={(evt) => {
-            evt.stopPropagation();
-          }}
+          onClick={onCartClick}
         >
           <CartIcon />
         </Button>

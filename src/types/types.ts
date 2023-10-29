@@ -47,7 +47,33 @@ export interface IBaseAddress {
 
 // product
 
-export type IFilters = Record<string, string>;
+export interface IFiltersAPI {
+  brand?: string[];
+  size?: string[];
+  category?: string[];
+  price?: {
+    min?: number;
+    max?: number;
+  };
+  searchText?: string;
+}
+
+export type IFilters = Omit<IFiltersAPI, 'searchText'>;
+
+export type SortMethod = 'price' | 'name.en-US';
+export type SortType = 'asc' | 'desc';
+
+export interface ISort {
+  method?: SortMethod;
+  type?: SortType;
+}
+
+export interface IPerformRequestData {
+  limit?: number;
+  offset?: number;
+  id?: string;
+  key?: string;
+}
 
 export interface ICategory {
   id: string;
@@ -134,13 +160,15 @@ export interface IProductVariantData {
 }
 
 export interface IProductVariant {
-  id: string;
+  id: number;
   sku: string;
   prices: IProductPrice[];
   images: IProductImage[];
   attributes: IProductAttribute[];
   availability: {
+    id: string;
     channels: Record<string, IProductAvailability>;
+    availableQuantity: number;
   };
 }
 
@@ -159,20 +187,17 @@ export interface IProductDetails {
 
 export interface IProductPrice {
   id: string;
-  value: {
-    type: string;
-    currencyCode: string;
-    centAmount: number;
-    fractionDigits: number;
-  };
+  value: ICentPrecisionMoney;
   discounted: {
-    value: {
-      type: string;
-      currencyCode: string;
-      centAmount: number;
-      fractionDigits: number;
-    };
+    value: ICentPrecisionMoney;
   };
+}
+
+export interface ICentPrecisionMoney {
+  type: string;
+  currencyCode: string;
+  centAmount: number;
+  fractionDigits: number;
 }
 
 export interface IProductImage {
@@ -204,6 +229,8 @@ export interface IFacetResult {
 
 // common
 
+export type requestMethod = 'get' | 'post' | 'delete';
+
 export type IAddressUpdateAction =
   | 'addBillingAddressId'
   | 'addShippingAddressId'
@@ -233,6 +260,7 @@ export interface IAccessToken {
   scope: string;
   token_type: string;
   refresh_token?: string;
+  anonymous_id?: string;
 }
 
 export interface ITokenData {
@@ -257,4 +285,120 @@ export interface ICategoryList extends IList {
 
 export interface IProductList extends IList {
   results: IProduct[];
+}
+
+// cart
+
+interface IDiscountCode {
+  id: string;
+  typeId: string;
+  state: string;
+}
+
+interface IAction {
+  action?: string;
+  quantity?: number;
+  variantId?: number;
+  lineItemId?: string;
+  productId?: string;
+}
+
+export interface IRequestData {
+  body?:
+    | Record<string, string | number>
+    | {
+        version: number;
+        actions: IAction[];
+      }
+    | { reference: { id: string; typeId: string } };
+  queryParams?: Record<string, string>;
+}
+
+export interface ICartCommonFields {
+  id: string;
+  version: number;
+  versionModifiedAt: string;
+  lastMessageSequenceNumber: number;
+  createdAt: string;
+  lastModifiedAt: string;
+  lastModifiedBy: IClientInfo;
+  createdBy: IClientInfo;
+}
+
+export interface ILineItem extends ICartCommonFields {
+  addedAt: string;
+  discountedPricePerQuantity: string[]; // Заменить 'string'
+  discountedPrice: {
+    includedDiscounts?: Array<{ discountedAmount: ICentPrecisionMoney }>;
+    value: ICentPrecisionMoney;
+  };
+  lineItemMode: string;
+  name: Record<string, string>;
+  perMethodTaxRate: string[]; // Заменить 'string'
+  price: {
+    id: string;
+    value: {
+      type: string;
+      currencyCode: string;
+      centAmount: number;
+      fractionDigits: number;
+    };
+    discounted: {
+      discount: { id: string; typeId: string };
+      value: ICentPrecisionMoney;
+    };
+  };
+  priceMode: string;
+  productId: string;
+  productKey: string;
+  productSlug: Record<string, string>;
+  productType: {
+    typeId: string;
+    id: string;
+    version: number;
+  };
+  quantity: number;
+  state: string[]; // Заменить 'string'
+  taxedPricePortions: string[]; // Заменить 'string'
+  totalPrice: ICentPrecisionMoney;
+  variant: {
+    assets: string[]; // Заменить 'string'
+    attributes: IProductAttribute[];
+    availability: {
+      availableQuantity: number;
+      id: string;
+      isOnStock: boolean;
+      version: number;
+    };
+    images: Array<{ url: string }>;
+  };
+  sku: string;
+}
+
+export interface ICart extends ICartCommonFields {
+  anonymousId?: string;
+  customerId?: string;
+  lineItems: ILineItem[];
+  cartState: string;
+  totalPrice: {
+    type: string;
+    currencyCode: string;
+    centAmount: number;
+    fractionDigits: number;
+  };
+  shippingMode: string;
+  shipping: string[]; // Заменить 'string'
+  customLineItems: string[]; // Заменить 'string'
+  discountCodes: IDiscountCode[];
+  directDiscounts: string[]; // Заменить 'string'
+  inventoryMode: string;
+  taxMode: string;
+  taxRoundingMode: string;
+  taxCalculationMode: string;
+  deleteDaysAfterLastModification: number;
+  refusedGifts: string[]; // Заменить 'string'
+  origin: string;
+  itemShippingAddresses: string[]; // Заменить 'string'
+  store: IStore;
+  totalLineItemQuantity: number;
 }
